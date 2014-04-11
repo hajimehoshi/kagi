@@ -1,0 +1,72 @@
+package main
+
+import (
+	"crypto/sha512"
+	"encoding/base64"
+	"fmt"
+	"io/ioutil"
+	"os"
+	"strings"
+)
+
+func showUsage() {
+	fmt.Fprintf(os.Stderr, "Usage: %s SITES_FILE MASTER_PASS_FILE\n", os.Args[0])
+}
+
+func createPassword(site, masterPass string) string {
+	str := fmt.Sprintf("%s:%s", site, masterPass)
+	bytePass := sha512.Sum512([]byte(str))
+	return base64.StdEncoding.EncodeToString(bytePass[:])[0:32]
+}
+
+func loadSites(filename string) []string {
+	file, err := os.Open(filename)
+	if err != nil {
+		panic(err)
+	}
+	defer file.Close()
+	fileContent, err := ioutil.ReadAll(file)
+	if err != nil {
+		panic(err)
+	}
+	provisionalSites := strings.Split(string(fileContent), "\n")
+	sites := []string{}
+	for _, site := range provisionalSites {
+		if site != "" && site[0] != '#' {
+			sites = append(sites, site)
+		}
+	}
+	return sites
+}
+
+func loadMasterPassword(filename string) string {
+	file, err := os.Open(filename)
+	if err != nil {
+		panic(err)
+	}
+	defer file.Close()
+	fileContent, err := ioutil.ReadAll(file)
+	if err != nil {
+		panic(err)
+	}
+	return strings.Trim(string(fileContent), " \n")
+}
+
+var sites []string
+var masterPassword string
+
+func init() {
+	if len(os.Args) != 3 {
+		showUsage()
+		os.Exit(-1)
+	}
+	sites = loadSites(os.Args[1])
+	masterPassword = loadMasterPassword(os.Args[2])
+}
+
+func main() {
+	for _, site := range sites {
+		fmt.Printf("%s:\n", site)
+		fmt.Printf("  %s\n", createPassword(site, masterPassword))
+	}
+}
