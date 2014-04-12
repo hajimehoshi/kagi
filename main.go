@@ -13,6 +13,10 @@ func showUsage() {
 	fmt.Fprintf(os.Stderr, "Usage: %s SITES_FILE MASTER_PASS_FILE\n", os.Args[0])
 }
 
+func trim(str string) string {
+	return strings.Trim(str, " \t\n")	
+}
+
 func createPassword(site, masterPass string) string {
 	str := fmt.Sprintf("%s:%s", site, masterPass)
 	bytePass := sha512.Sum512([]byte(str))
@@ -49,7 +53,7 @@ func loadMasterPassword(filename string) string {
 	if err != nil {
 		panic(err)
 	}
-	return strings.Trim(string(fileContent), " \n")
+	return trim(string(fileContent))
 }
 
 var sites []string
@@ -66,6 +70,7 @@ func init() {
 
 func main() {
 	for _, site := range sites {
+		site := trim(site)
 		fmt.Printf("%s:\n", site)
 		fmt.Printf("  %s\n", createPassword(site, masterPassword))
 	}
