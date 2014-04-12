@@ -1,12 +1,21 @@
 Kagi
 ====
 
-Kagi is a simple password generator.
+Kagi (鍵) is a simple password generator.
+
+Install
+-------
+
+```
+:; go install github.com/hajimehoshi/kagi 
+```
 
 Usage
 -----
 
-kagi SITES_FILE MASTER_PASSWORD_FILE
+```
+:; kagi SITES_FILE MASTER_PASSWORD_FILE
+```
 
 License
 -------
