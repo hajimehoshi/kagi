@@ -7,6 +7,15 @@ Install
 -------
 
 ```
+:; go get github.com/hajimehoshi/kagi 
+:; go install github.com/hajimehoshi/kagi 
+```
+
+Update
+------
+
+```
+:; go get -u github.com/hajimehoshi/kagi 
 :; go install github.com/hajimehoshi/kagi 
 ```
 
