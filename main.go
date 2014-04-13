@@ -36,6 +36,7 @@ func loadSites(filename string) []string {
 	provisionalSites := strings.Split(string(fileContent), "\n")
 	sites := []string{}
 	for _, site := range provisionalSites {
+		site := trim(site)
 		if site != "" && site[0] != '#' {
 			sites = append(sites, site)
 		}
@@ -43,7 +44,25 @@ func loadSites(filename string) []string {
 	return sites
 }
 
+func isReadableOnlyByOwner(filename string) bool {
+	fileinfo, err := os.Stat(filename)
+	if err != nil {
+		panic(err)
+	}
+	mode := fileinfo.Mode()
+	if !mode.IsRegular() {
+		return false
+	}
+	perm := mode.Perm() 
+	return (perm & 0077) == 0
+}
+
 func loadMasterPassword(filename string) string {
+	if !isReadableOnlyByOwner(filename) {
+		fmt.Fprintf(os.Stderr,
+			"WARN: %s should not be readable by non-owner users.\n",
+			filename)
+	}
 	file, err := os.Open(filename)
 	if err != nil {
 		panic(err)
@@ -70,7 +89,6 @@ func init() {
 
 func main() {
 	for _, site := range sites {
-		site := trim(site)
 		fmt.Printf("%s:\n", site)
 		fmt.Printf("  %s\n", createPassword(site, masterPassword))
 	}
