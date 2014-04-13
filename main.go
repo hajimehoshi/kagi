@@ -88,8 +88,17 @@ func init() {
 }
 
 func main() {
+	longestSiteLen := 0
 	for _, site := range sites {
-		fmt.Printf("%s:\n", site)
-		fmt.Printf("  %s\n", createPassword(site, masterPassword))
+		siteLen := len(site)
+		if longestSiteLen < siteLen {
+			longestSiteLen = siteLen
+		}
+	}
+	for _, site := range sites {
+		spaceNum := longestSiteLen - len(site) + 1
+		spaceStr := strings.Repeat(" ", spaceNum)
+		fmt.Printf("%s:%s%s\n", site, spaceStr,
+			createPassword(site, masterPassword))
 	}
 }
