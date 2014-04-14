@@ -44,23 +44,20 @@ func loadSites(filename string) []string {
 	return sites
 }
 
-func isReadableOnlyByOwner(filename string) bool {
+func isAccessibleOnlyByOwner(filename string) bool {
 	fileinfo, err := os.Stat(filename)
 	if err != nil {
 		panic(err)
 	}
 	mode := fileinfo.Mode()
-	if !mode.IsRegular() {
-		return false
-	}
 	perm := mode.Perm() 
 	return (perm & 0077) == 0
 }
 
 func loadMasterPassword(filename string) string {
-	if !isReadableOnlyByOwner(filename) {
+	if !isAccessibleOnlyByOwner(filename) {
 		fmt.Fprintf(os.Stderr,
-			"WARN: %s should not be readable by non-owner users.\n",
+			"WARN: %s should be accessible only by the owner.\n",
 			filename)
 	}
 	file, err := os.Open(filename)
