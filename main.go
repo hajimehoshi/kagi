@@ -35,6 +35,13 @@ func ParseFilter(line string) Filter {
 			From: args[0],
 			To:   args[1],
 		}
+	case "skip":
+		if len(args) != 1 {
+			return nil
+		}
+		filter = &SkipFilter{
+			Char: []rune(args[0])[0],
+		}
 	case "substring":
 		if len(args) < 1 || 2 < len(args) {
 			return nil
@@ -68,6 +75,14 @@ func (f *ReplaceFilter) Apply(str string) string {
 	return strings.Replace(str, f.From, f.To, -1)
 }
 
+type SkipFilter struct {
+	Char rune
+}
+
+func (f *SkipFilter) Apply(str string) string {
+	return strings.Replace(str, string(f.Char), "", -1)
+}
+
 type SubstringFilter struct {
 	Start  int
 	Length int
@@ -75,7 +90,11 @@ type SubstringFilter struct {
 
 func (f *SubstringFilter) Apply(str string) string {
 	if 0 <= f.Length {
-		return str[f.Start:(f.Length-f.Start)]
+		end := f.Length-f.Start
+		if len(str) <= end {
+			end = len(str)
+		}
+		return str[f.Start:end]
 	} else {
 		return str[f.Start:]
 	}
