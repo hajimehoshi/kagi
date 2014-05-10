@@ -3,16 +3,8 @@ Kagi
 
 Kagi (鍵) is a simple password generator.
 
-Install
+Install or update
 -------
-
-```
-:; go get github.com/hajimehoshi/kagi 
-:; go install github.com/hajimehoshi/kagi 
-```
-
-Update
-------
 
 ```
 :; go get -u github.com/hajimehoshi/kagi 
