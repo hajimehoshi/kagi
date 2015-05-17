@@ -40,7 +40,7 @@ func ParseFilter(line string) Filter {
 			return nil
 		}
 		filter = &SkipFilter{
-			Char: []rune(args[0])[0],
+			Chars: []rune(args[0]),
 		}
 	case "substring":
 		if len(args) < 1 || 2 < len(args) {
@@ -76,11 +76,14 @@ func (f *ReplaceFilter) Apply(str string) string {
 }
 
 type SkipFilter struct {
-	Char rune
+	Chars []rune
 }
 
 func (f *SkipFilter) Apply(str string) string {
-	return strings.Replace(str, string(f.Char), "", -1)
+	for _, c := range f.Chars {
+		str = strings.Replace(str, string(c), "", -1)
+	}
+	return str
 }
 
 type SubstringFilter struct {
@@ -90,7 +93,7 @@ type SubstringFilter struct {
 
 func (f *SubstringFilter) Apply(str string) string {
 	if 0 <= f.Length {
-		end := f.Length-f.Start
+		end := f.Length - f.Start
 		if len(str) <= end {
 			end = len(str)
 		}
@@ -163,7 +166,7 @@ func isAccessibleOnlyByOwner(filename string) bool {
 		panic(err)
 	}
 	mode := fileinfo.Mode()
-	perm := mode.Perm() 
+	perm := mode.Perm()
 	return (perm & 0077) == 0
 }
 
