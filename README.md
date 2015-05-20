@@ -17,4 +17,4 @@ Kagi (鍵) is a simple password generator.
 
 ## License
 
-Kagi is licensed under Apache license version 2.0. See license.txt.
+Kagi is licensed under Apache license version 2.0. See LICENSE file.
