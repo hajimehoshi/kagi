@@ -61,20 +61,20 @@ func ParseFilter(line string) Filter {
 			return nil
 		}
 		start := 0
-		length := -1
+		end := -1
 		s, err := strconv.Atoi(args[0])
 		if err == nil {
 			start = s
 		}
 		if 2 <= len(args) {
-			l, err := strconv.Atoi(args[1])
+			e, err := strconv.Atoi(args[1])
 			if err == nil {
-				length = l
+				end = e
 			}
 		}
 		filter = &SubstringFilter{
-			Start:  start,
-			Length: length,
+			Start: start,
+			End:   end,
 		}
 	}
 	return filter
@@ -101,13 +101,13 @@ func (f *SkipFilter) Apply(str string) string {
 }
 
 type SubstringFilter struct {
-	Start  int
-	Length int
+	Start int
+	End   int
 }
 
 func (f *SubstringFilter) Apply(str string) string {
-	if 0 <= f.Length {
-		end := f.Length - f.Start
+	if 0 <= f.End {
+		end := f.End
 		if len(str) <= end {
 			end = len(str)
 		}
