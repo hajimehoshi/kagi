@@ -76,6 +76,8 @@ func ParseFilter(line string) Filter {
 			Start: start,
 			End:   end,
 		}
+	case "digit":
+		filter = &DigitFilter{}
 	}
 	return filter
 }
@@ -87,6 +89,23 @@ type ReplaceFilter struct {
 
 func (f *ReplaceFilter) Apply(str string) string {
 	return strings.Replace(str, f.From, f.To, -1)
+}
+
+type DigitFilter struct {
+}
+
+func (d *DigitFilter) Apply(str string) string {
+	for i := 0; i < 20; i++ {
+		str = strings.ReplaceAll(str, string('a'+i), string('0'+i%10))
+		str = strings.ReplaceAll(str, string('A'+i), string('0'+i%10))
+	}
+	for i := 20; i < 26; i++ {
+		str = strings.ReplaceAll(str, string('a'+i), "")
+		str = strings.ReplaceAll(str, string('A'+i), "")
+	}
+	str = strings.ReplaceAll(str, "+", "")
+	str = strings.ReplaceAll(str, "/", "")
+	return str
 }
 
 type SkipFilter struct {
