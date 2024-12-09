@@ -74,6 +74,10 @@ func ParseFilter(line string) Filter {
 		}
 	case "digit":
 		filter = filterDigits
+	case "uppercase":
+		filter = strings.ToUpper
+	case "lowercase":
+		filter = strings.ToLower
 	}
 	return filter
 }
