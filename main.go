@@ -24,9 +24,7 @@ import (
 	"strings"
 )
 
-type Filter interface {
-	Apply(str string) string
-}
+type Filter = func(str string) string
 
 func ParseFilter(line string) Filter {
 	fields := strings.Fields(line)
@@ -45,16 +43,15 @@ func ParseFilter(line string) Filter {
 		if len(args) != 2 {
 			return nil
 		}
-		filter = &ReplaceFilter{
-			From: args[0],
-			To:   args[1],
+		filter = func(str string) string {
+			return strings.ReplaceAll(str, args[0], args[1])
 		}
 	case "skip":
 		if len(args) != 1 {
 			return nil
 		}
-		filter = &SkipFilter{
-			Chars: []rune(args[0]),
+		filter = func(str string) string {
+			return filterSkip(str, []rune(args[0]))
 		}
 	case "substring":
 		if len(args) < 1 || 2 < len(args) {
@@ -72,29 +69,16 @@ func ParseFilter(line string) Filter {
 				end = e
 			}
 		}
-		filter = &SubstringFilter{
-			Start: start,
-			End:   end,
+		filter = func(str string) string {
+			return filterSubstring(str, start, end)
 		}
 	case "digit":
-		filter = &DigitFilter{}
+		filter = filterDigits
 	}
 	return filter
 }
 
-type ReplaceFilter struct {
-	From string
-	To   string
-}
-
-func (f *ReplaceFilter) Apply(str string) string {
-	return strings.Replace(str, f.From, f.To, -1)
-}
-
-type DigitFilter struct {
-}
-
-func (d *DigitFilter) Apply(str string) string {
+func filterDigits(str string) string {
 	for i := 0; i < 20; i++ {
 		str = strings.ReplaceAll(str, string('a'+i), string('0'+i%10))
 		str = strings.ReplaceAll(str, string('A'+i), string('0'+i%10))
@@ -108,31 +92,22 @@ func (d *DigitFilter) Apply(str string) string {
 	return str
 }
 
-type SkipFilter struct {
-	Chars []rune
-}
-
-func (f *SkipFilter) Apply(str string) string {
-	for _, c := range f.Chars {
+func filterSkip(str string, chars []rune) string {
+	for _, c := range chars {
 		str = strings.Replace(str, string(c), "", -1)
 	}
 	return str
 }
 
-type SubstringFilter struct {
-	Start int
-	End   int
-}
-
-func (f *SubstringFilter) Apply(str string) string {
-	if 0 <= f.End {
-		end := f.End
+func filterSubstring(str string, start, end int) string {
+	if 0 <= end {
+		end := end
 		if len(str) <= end {
 			end = len(str)
 		}
-		return str[f.Start:end]
+		return str[start:end]
 	} else {
-		return str[f.Start:]
+		return str[start:]
 	}
 }
 
@@ -145,16 +120,12 @@ func showUsage() {
 	fmt.Fprintf(os.Stderr, "Usage: %s SITES_FILE MASTER_PASS_FILE\n", os.Args[0])
 }
 
-func trim(str string) string {
-	return strings.Trim(str, " \t\r\n")
-}
-
 func (s *Site) Password(masterPass string) string {
 	str := fmt.Sprintf("%s:%s", s.Name, masterPass)
 	bytePass := sha512.Sum512([]byte(str))
 	pass := base64.StdEncoding.EncodeToString(bytePass[:])[0:32]
 	for _, filter := range s.Filters {
-		pass = filter.Apply(pass)
+		pass = filter(pass)
 	}
 	return pass
 }
@@ -173,7 +144,7 @@ func loadSites(filename string) []*Site {
 	sites := []*Site{}
 	latestFilters := []Filter{}
 	for _, line := range lines {
-		line := trim(line)
+		line := strings.TrimSpace(line)
 		switch {
 		case line == "":
 			latestFilters = []Filter{}
@@ -218,7 +189,7 @@ func loadMasterPassword(filename string) string {
 	if err != nil {
 		panic(err)
 	}
-	return trim(string(fileContent))
+	return strings.TrimSpace(string(fileContent))
 }
 
 var sites []*Site
