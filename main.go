@@ -18,7 +18,7 @@ import (
 	"crypto/sha512"
 	"encoding/base64"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"os"
 	"strconv"
 	"strings"
@@ -165,7 +165,7 @@ func loadSites(filename string) []*Site {
 		panic(err)
 	}
 	defer file.Close()
-	fileContent, err := ioutil.ReadAll(file)
+	fileContent, err := io.ReadAll(file)
 	if err != nil {
 		panic(err)
 	}
@@ -214,7 +214,7 @@ func loadMasterPassword(filename string) string {
 		panic(err)
 	}
 	defer file.Close()
-	fileContent, err := ioutil.ReadAll(file)
+	fileContent, err := io.ReadAll(file)
 	if err != nil {
 		panic(err)
 	}

@@ -1,3 +1,3 @@
 module github.com/hajimehoshi/kagi
 
-go 1.15
+go 1.18
