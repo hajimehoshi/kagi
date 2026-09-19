@@ -175,8 +175,8 @@ func loadSites(filename string) []*Site {
 }
 
 const (
-	keyringService = "kagi"
-	keyringAccount = "master"
+	keyringService = "github.com/hajimehoshi/kagi"
+	keyringAccount = "master-password"
 )
 
 func loadMasterPassword() (string, error) {

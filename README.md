@@ -19,7 +19,8 @@ kagi -set-master-password
 ```
 
 The command prompts twice with terminal echo disabled. It stores the password
-under service `kagi`, account `master`. Running it again replaces the password.
+under service `github.com/hajimehoshi/kagi`, account `master-password`.
+Running it again replaces the password.
 
 Generate passwords using the stored master password:
 

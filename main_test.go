@@ -29,7 +29,7 @@ type passwordProvider struct {
 }
 
 func (p *passwordProvider) Get(service, account string) (string, error) {
-	if service != "kagi" || account != "master" {
+	if service != "github.com/hajimehoshi/kagi" || account != "master-password" {
 		return "", keyring.ErrNotFound
 	}
 	return p.password, p.err
