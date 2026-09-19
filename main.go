@@ -17,11 +17,16 @@ package main
 import (
 	"crypto/sha512"
 	"encoding/base64"
+	"errors"
+	"flag"
 	"fmt"
 	"io"
 	"os"
 	"strconv"
 	"strings"
+
+	"github.com/tmc/keyring"
+	"golang.org/x/term"
 )
 
 type Filter = func(str string) string
@@ -84,12 +89,12 @@ func ParseFilter(line string) Filter {
 
 func filterDigits(str string) string {
 	for i := 0; i < 20; i++ {
-		str = strings.ReplaceAll(str, string('a'+i), string('0'+i%10))
-		str = strings.ReplaceAll(str, string('A'+i), string('0'+i%10))
+		str = strings.ReplaceAll(str, string(rune('a'+i)), string(rune('0'+i%10)))
+		str = strings.ReplaceAll(str, string(rune('A'+i)), string(rune('0'+i%10)))
 	}
 	for i := 20; i < 26; i++ {
-		str = strings.ReplaceAll(str, string('a'+i), "")
-		str = strings.ReplaceAll(str, string('A'+i), "")
+		str = strings.ReplaceAll(str, string(rune('a'+i)), "")
+		str = strings.ReplaceAll(str, string(rune('A'+i)), "")
 	}
 	str = strings.ReplaceAll(str, "+", "")
 	str = strings.ReplaceAll(str, "/", "")
@@ -121,7 +126,8 @@ type Site struct {
 }
 
 func showUsage() {
-	fmt.Fprintf(os.Stderr, "Usage: %s SITES_FILE MASTER_PASS_FILE\n", os.Args[0])
+	fmt.Fprintf(os.Stderr, "Usage: %s SITES_FILE\n       %s -set-master-password\n", os.Args[0], os.Args[0])
+	flag.PrintDefaults()
 }
 
 func (s *Site) Password(masterPass string) string {
@@ -168,47 +174,75 @@ func loadSites(filename string) []*Site {
 	return sites
 }
 
-func isAccessibleOnlyByOwner(filename string) bool {
-	fileinfo, err := os.Stat(filename)
-	if err != nil {
-		panic(err)
+const (
+	keyringService = "kagi"
+	keyringAccount = "master"
+)
+
+func loadMasterPassword() (string, error) {
+	password, err := keyring.Get(keyringService, keyringAccount)
+	if errors.Is(err, keyring.ErrNotFound) {
+		return "", fmt.Errorf("master password not found; run kagi -set-master-password: %w", err)
 	}
-	mode := fileinfo.Mode()
-	perm := mode.Perm()
-	return (perm & 0077) == 0
+	if err != nil {
+		return "", fmt.Errorf("read master password from keychain: %w", err)
+	}
+	return strings.TrimSpace(password), nil
 }
 
-func loadMasterPassword(filename string) string {
-	if !isAccessibleOnlyByOwner(filename) {
-		fmt.Fprintf(os.Stderr,
-			"WARN: %s should be accessible only by the owner.\n",
-			filename)
+func setMasterPassword() error {
+	readPassword := func(prompt string) (string, error) {
+		fmt.Fprint(os.Stderr, prompt)
+		password, err := term.ReadPassword(int(os.Stdin.Fd()))
+		fmt.Fprintln(os.Stderr)
+		if err != nil {
+			return "", fmt.Errorf("read password from terminal: %w", err)
+		}
+		return strings.TrimSpace(string(password)), nil
 	}
-	file, err := os.Open(filename)
+	password, err := readPassword("Master password: ")
 	if err != nil {
-		panic(err)
+		return err
 	}
-	defer file.Close()
-	fileContent, err := io.ReadAll(file)
+	if password == "" {
+		return errors.New("master password must not be empty")
+	}
+	confirmation, err := readPassword("Confirm master password: ")
 	if err != nil {
-		panic(err)
+		return err
 	}
-	return strings.TrimSpace(string(fileContent))
+	if password != confirmation {
+		return errors.New("master passwords do not match")
+	}
+	if err := keyring.Set(keyringService, keyringAccount, password); err != nil {
+		return fmt.Errorf("store master password in keychain: %w", err)
+	}
+	fmt.Fprintln(os.Stderr, "Master password stored in the keychain.")
+	return nil
 }
 
-var sites []*Site
-var masterPassword string
+func run() error {
+	setPassword := flag.Bool("set-master-password", false, "Store the master password in the OS keychain")
+	flag.Usage = showUsage
+	flag.Parse()
 
-func init() {
-	if len(os.Args) != 3 {
-		showUsage()
-		os.Exit(-1)
+	if *setPassword {
+		if flag.NArg() != 0 {
+			flag.Usage()
+			return errors.New("-set-master-password does not accept arguments")
+		}
+		return setMasterPassword()
 	}
-	sites = loadSites(os.Args[1])
-	masterPassword = loadMasterPassword(os.Args[2])
-}
+	if flag.NArg() != 1 {
+		flag.Usage()
+		return errors.New("expected a sites file")
+	}
 
-func main() {
+	sites := loadSites(flag.Arg(0))
+	masterPassword, err := loadMasterPassword()
+	if err != nil {
+		return err
+	}
 	longestSiteLen := 0
 	for _, site := range sites {
 		siteLen := len(site.Name)
@@ -221,5 +255,13 @@ func main() {
 		spaceStr := strings.Repeat(" ", spaceNum)
 		fmt.Printf("%s:%s%s\n", site.Name, spaceStr,
 			site.Password(masterPassword))
+	}
+	return nil
+}
+
+func main() {
+	if err := run(); err != nil {
+		fmt.Fprintln(os.Stderr, "kagi:", err)
+		os.Exit(1)
 	}
 }
